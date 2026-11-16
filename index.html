@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speak Up! Oficina de conversação</title>
+<style>
+  :root {
+    --paper: #f6f1e7;
+    --ink: #1f2a24;
+    --muted: #5f6b63;
+    --board: #24402f;
+    --board-deep: #1b3125;
+    --wood: #8a5a2b;
+    --chalk: #f3efe4;
+    --chalk-yellow: #f4d35e;
+    --accent: #6b2c91;
+    --accent-soft: #efe4f6;
+    --warn: #b3261e;
+    --ok: #1d6b45;
+    --line: #d9d0be;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--chalk-yellow); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 20px;
+    border-bottom: 2px solid var(--line);
+  }
+  .brand { font-family: Georgia, "Times New Roman", serif; font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .brand small { font-family: "Segoe UI", system-ui, sans-serif; font-weight: 400; font-size: .85rem; color: var(--muted); margin-left: 8px; }
+  .tag { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 4px 14px; font-weight: 600; }
+  .spacer { flex: 1; }
+  .btn {
+    border: 2px solid var(--ink); background: #fff; border-radius: 10px;
+    padding: 8px 16px; font-weight: 600;
+  }
+  .btn:hover { background: var(--accent-soft); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #57207a; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  main { flex: 1; min-height: 0; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  /* ---------- Tela inicial ---------- */
+  #home h1 { font-family: Georgia, serif; font-size: clamp(1.8rem, 3.2vw, 2.8rem); margin: 8px 0 4px; }
+  #home p.lead { color: var(--muted); margin: 0 0 20px; }
+  .setup { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 22px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: .85rem; font-weight: 600; color: var(--muted); }
+  .field input, .field select {
+    border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; min-width: 220px;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+  .card {
+    text-align: left; background: var(--board); color: var(--chalk);
+    border: 6px solid var(--wood); border-radius: var(--radius);
+    padding: 18px; min-height: 150px; display: flex; flex-direction: column; gap: 8px;
+    transition: transform .12s ease;
+  }
+  .card:hover { transform: translateY(-3px); }
+  .card .en { font-family: Georgia, serif; font-size: 1.45rem; font-weight: 700; color: var(--chalk-yellow); }
+  .card .pt { font-size: .95rem; opacity: .9; }
+  .card .ex { margin-top: auto; font-size: .9rem; font-style: italic; opacity: .8; }
+  .notice {
+    margin-top: 20px; padding: 12px 16px; border-left: 6px solid var(--warn);
+    background: #fbe9e7; border-radius: 8px;
+  }
+  .notice.info { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- Tela de conversa ---------- */
+  #talk { display: flex; flex-direction: column; gap: 12px; }
+  #log {
+    flex: 1; min-height: 0; overflow-y: auto;
+    background: var(--board); border: 8px solid var(--wood); border-radius: var(--radius);
+    padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .msg { max-width: 88%; }
+  .msg .who { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; opacity: .7; color: var(--chalk); margin-bottom: 2px; }
+  .msg.ai .en {
+    font-family: Georgia, serif; color: var(--chalk);
+    font-size: clamp(1.5rem, 3vw, 2.6rem); line-height: 1.25; margin: 0;
+  }
+  .msg.ai .pt { color: var(--chalk-yellow); font-size: clamp(1rem, 1.6vw, 1.35rem); margin: 6px 0 0; }
+  .msg.ai.old .en { font-size: clamp(1.1rem, 1.8vw, 1.5rem); opacity: .7; }
+  .msg.me { align-self: flex-end; text-align: right; }
+  .msg.me .said {
+    display: inline-block; background: var(--chalk); color: var(--ink);
+    border-radius: 14px 14px 2px 14px; padding: 8px 16px; margin: 0;
+    font-size: clamp(1.15rem, 2vw, 1.7rem);
+  }
+  .msg.me .better { color: var(--chalk-yellow); margin: 6px 0 0; font-size: clamp(1rem, 1.6vw, 1.35rem); }
+  .thinking { color: var(--chalk); opacity: .8; font-style: italic; }
+
+  #hints { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  #hints .lbl { font-weight: 600; color: var(--muted); }
+  .chip {
+    background: #fff; border: 2px dashed var(--accent); color: var(--accent);
+    border-radius: 999px; padding: 6px 16px; font-size: 1.15rem; font-weight: 600;
+  }
+
+  #status { min-height: 1.5em; font-weight: 600; color: var(--muted); }
+  #status.err { color: var(--warn); }
+
+  .controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #mic {
+    width: 92px; height: 92px; border-radius: 50%; flex: none;
+    border: 0; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    box-shadow: 0 4px 0 #3f1859;
+  }
+  #mic svg { width: 34px; height: 34px; }
+  #mic.on { background: var(--warn); box-shadow: 0 4px 0 #7a1712; animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.07); } }
+  @media (prefers-reduced-motion: reduce) { #mic.on { animation: none; } .card { transition: none; } }
+  .aids { display: flex; gap: 8px; flex-wrap: wrap; }
+  #typed { flex: 1 1 320px; min-width: 0; display: flex; gap: 8px; }
+  #typed input { flex: 1; min-width: 0;border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px; background: #fff; font-size: 1.1rem; }
+
+  dialog { border: 0; border-radius: var(--radius); padding: 24px; width: min(560px, 92vw); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+  dialog::backdrop { background: rgba(20, 30, 24, .55); }
+  dialog h2 { margin: 0 0 14px; font-family: Georgia, serif; }
+  dialog .field { margin-bottom: 14px; }
+  dialog .field input, dialog .field select { width: 100%; }
+  dialog .row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  dialog .help { font-size: .9rem; color: var(--muted); margin: 4px 0 0; }
+  #testOut { font-weight: 600; min-height: 1.4em; margin: 0 0 12px; }
+  label.check { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Speak Up!<small>oficina de conversação</small></div>
+  <span class="tag" id="scenarioTag" hidden></span>
+  <span class="tag" id="demoTag" hidden>modo demonstração</span>
+  <div class="spacer"></div>
+  <button class="btn primary" id="nextBtn" hidden>Next student</button>
+  <button class="btn" id="homeBtn" hidden>Trocar cenário</button>
+  <button class="btn" id="settingsBtn">Configurar</button>
+</header>
+
+<main id="home">
+  <h1>Let's talk!</h1>
+  <p class="lead">Escolha um cenário. A Luisa conversa em inglês simples, uma pergunta por vez.</p>
+
+  <div class="setup">
+    <div class="field">
+      <label for="studentName">Primeiro nome do aluno (opcional)</label>
+      <input id="studentName" autocomplete="off" maxlength="30" placeholder="Ex.: Ana">
+    </div>
+    <div class="field">
+      <label for="level">Nível</label>
+      <select id="level">
+        <option value="A1">Iniciante (8º ano)</option>
+        <option value="A2">Um pouco mais (9º ano)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+  <div class="notice" id="keyNotice" hidden>
+    Falta a chave da API do Gemini. Clique em <b>Configurar</b> e cole a chave para a Luisa poder responder.
+  </div>
+  <div class="notice" id="browserNotice" hidden>
+    Este navegador não tem reconhecimento de fala. Abra no <b>Google Chrome</b> ou <b>Microsoft Edge</b>; por enquanto só o campo de texto funciona.
+  </div>
+</main>
+
+<main id="talk" hidden>
+  <div id="log" aria-live="polite"></div>
+  <div id="hints" hidden></div>
+  <div id="status" role="status"></div>
+  <div class="controls">
+    <button id="mic" title="Falar (barra de espaço)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      <span id="micLbl">Speak</span>
+    </button>
+    <div class="aids">
+      <button class="btn" id="repeatBtn">Repeat</button>
+      <button class="btn" id="slowBtn">Slowly</button>
+      <button class="btn" id="ptBtn">Traduzir</button>
+      <button class="btn" id="hintBtn">Hint</button>
+      <button class="btn" id="micPtBtn" title="O aluno fala em português e a Luisa ensina como dizer em inglês">Falar em português</button>
+    </div>
+    <form id="typed">
+      <input id="typedInput" autocomplete="off" placeholder="Ou digite aqui a resposta do aluno e aperte Enter">
+      <button class="btn" type="submit">Send</button>
+    </form>
+  </div>
+</main>
+
+<dialog id="settings">
+  <h2>Configurar</h2>
+  <div class="field">
+    <label for="keyInput">Chave da API do Gemini</label>
+    <input id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="Cole aqui a chave criada em aistudio.google.com">
+    <p class="help">Fica salva só neste navegador, neste computador. Não vai para dentro do arquivo.</p>
+  </div>
+  <div class="field">
+    <label for="modelInput">Modelo</label>
+    <input id="modelInput" autocomplete="off" spellcheck="false">
+    <p class="help">Padrão: gemini-flash-latest. Só mude se o teste abaixo falhar.</p>
+  </div>
+  <div class="field">
+    <label for="voiceSel">Voz da Luisa</label>
+    <select id="voiceSel"></select>
+  </div>
+  <label class="check"><input type="checkbox" id="autoSend"> Enviar a fala automaticamente (desmarque para conferir o texto antes)</label>
+  <p id="testOut"></p>
+  <div class="row">
+    <button class="btn" id="voiceTestBtn">Ouvir a voz</button>
+    <button class="btn" id="testBtn">Testar chave</button>
+    <button class="btn primary" id="saveBtn">Salvar</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ================= Cenários ================= */
+const SCENARIOS = [
+  { id: "intro", en: "Introduce yourself", pt: "Apresentação pessoal", ex: "My name is... I'm ... years old. I like...",
+    brief: "Help the student introduce themselves: first name, age, where they are from (city), things they like (music, games, animals, school subjects). Start by saying your own name and asking theirs." },
+  { id: "family", en: "Family", pt: "Família (Unit 7)", ex: "I have one brother. My aunt is funny.",
+    brief: "Talk about families using the words mother, father, brother, sister, grandmother, grandfather, aunt, uncle, cousin, stepmother, stepfather, son, daughter, pet. Every kind of family is a real family. Start by offering a choice: talk about the student's own family OR about a famous movie or cartoon family (for example the birds in Rio 2, The Incredibles, Encanto, The Simpsons). Never insist on the student's own family; if they hesitate, say 'I don't know', or sound uncomfortable, switch immediately and cheerfully to a movie or cartoon family. Never ask why someone is absent from a family." },
+  { id: "movies", en: "Movies", pt: "Filmes e séries", ex: "My favorite movie is... It's funny.",
+    brief: "Talk about movies, series and cartoons: favorite movie, kind of movie (comedy, action, animation, horror, adventure), favorite character, who they watch with, simple opinions (funny, scary, boring, cool)." },
+  { id: "food", en: "Food & sports", pt: "Comida e esportes", ex: "I like pizza. I don't like fish. I play soccer.",
+    brief: "Talk about food and sports with 'Do you like...?', 'I like / I don't like', 'What's your favorite...?', 'Do you play...?', 'I play / I can'. Mix food and sports questions." },
+  { id: "guess", en: "Guessing game", pt: "Jogo de adivinhar (turma toda)", ex: "Is it a dog? Is it big?",
+    brief: "Play a guessing game with the whole class. Secretly choose a common animal. Give ONE simple clue per turn (for example 'It is big. It is gray.') and ask 'What is it?'. If the guess is wrong, say 'No, try again!' and give one new clue. If it is right, celebrate and start again with a new animal. In hints, give guess patterns like 'Is it a ___?' and never the answer." }
+];
+
+const DEMO_SCRIPT = [
+  { reply: "Hi! I'm Luisa. This is demo mode. What's your name?", reply_pt: "Oi! Eu sou a Luisa. Este é o modo demonstração. Qual é o seu nome?", better: "", hints: ["My name is ___.", "I'm ___."] },
+  { reply: "Nice to meet you! How old are you?", reply_pt: "Prazer em conhecer você! Quantos anos você tem?", better: "My name is Ana.", hints: ["I'm 13 years old.", "I'm 14."] },
+  { reply: "Great! What do you like?", reply_pt: "Ótimo! Do que você gosta?", better: "", hints: ["I like music.", "I like soccer.", "I like ___."] }
+];
+
+/* ================= Estado ================= */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("speakup." + k); return v === null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("speakup." + k, v); } catch { /* armazenamento bloqueado */ } }
+};
+const DEFAULT_MODEL = "gemini-flash-latest";
+const FALLBACK_MODEL = "gemini-flash-lite-latest";
+const S = {
+  key: store.get("key", ""),
+  model: store.get("model", DEFAULT_MODEL),
+  voiceName: store.get("voice", ""),
+  autoSend: store.get("autoSend", "1") === "1",
+  demo: new URLSearchParams(location.search).has("demo"),
+  scenario: null, history: [], busy: false, last: null, cfgLevel: 0, demoStep: 0,
+  rec: null, listening: false
+};
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+/* ================= Gemini ================= */
+const RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    reply: { type: "STRING" }, reply_pt: { type: "STRING" }, better: { type: "STRING" },
+    hints: { type: "ARRAY", items: { type: "STRING" } }
+  },
+  required: ["reply", "reply_pt", "better", "hints"]
+};
+// Do mais completo ao mais simples: se a API recusar um campo (erro 400), desce um degrau.
+const TIMEOUT_MS = 15000;
+const CONFIG_LADDER = [
+  { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA, thinkingConfig: { thinkingLevel: "minimal" } },
+  { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA, thinkingConfig: { thinkingLevel: "low" } },
+  { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA },
+  { responseMimeType: "application/json" },
+  null
+];
+
+function systemPrompt() {
+  const level = $("level").value === "A2"
+    ? "LEVEL A2: short sentences (up to 12 words). Present simple, present continuous, simple past and 'going to'. Common everyday words."
+    : "LEVEL A1 (beginners): very short sentences (up to 8 words). Present simple only, plus 'can' and 'like'. Only the most common words.";
+  return `You are Luisa, a friendly Brazilian girl who loves English, and a warm and patient English conversation partner for Brazilian students aged 13 to 15. The conversation happens out loud in a classroom, in front of the class. The student's words reach you through speech recognition, so the text may contain recognition mistakes: kindly guess what the student meant and never comment on spelling, capital letters or punctuation.
+
+${level}
+
+SCENARIO: ${S.scenario.brief}
+
+HOW TO ANSWER
+- "reply": one or two short sentences, then exactly ONE simple question. At most 25 words. Plain text only: no emojis, no markdown, no lists, because it is read aloud.
+- Always react to what the student said first, with short and varied praise for trying.
+- Never lecture about grammar. If the student made a mistake, put the correct sentence in "better" and naturally use the correct form in your reply.
+- If the student spoke Portuguese or mixed languages, put in "better" the English sentence they wanted to say, and in "reply" say "In English we say: ..." with that sentence, then ask them to try it.
+- If the message is empty or impossible to understand, kindly ask the student to say it again and make your question easier.
+- Stay inside the scenario. Keep everything suitable for school: no romance, violence, politics or religion. If the student goes there, gently change the subject.
+- Never ask for a surname, address, phone number, social media or the school's name.
+- Never pressure anyone about personal matters. If the student says "pass" or "I don't know", move on to an easier and lighter question.
+- A message starting with [START] is not from the student: it means begin the conversation now with a friendly greeting and your first question. If a first name is given there, use it.
+
+OUTPUT: only a JSON object with these keys:
+- "reply": what you say, in English.
+- "reply_pt": a natural Brazilian Portuguese translation of "reply".
+- "better": the corrected or English version of the student's last message; an empty string if it was already fine or if this is the start.
+- "hints": two or three short answers the student could say to your question, with ___ where the personal information goes.`;
+}
+
+function apiError(code, detail) { const e = new Error(detail || code); e.code = code; return e; }
+
+function explain(e) {
+  switch (e.code) {
+    case "nokey": return "Falta a chave da API. Clique em Configurar e cole a chave.";
+    case "badkey": return "A chave da API não foi aceita. Confira em Configurar se colou a chave inteira.";
+    case "quota": return "A cota gratuita do Gemini acabou por agora. Espere um minuto e tente de novo.";
+    case "model": return "O modelo configurado não existe mais. Em Configurar, apague o campo Modelo para voltar ao padrão.";
+    case "busy": return "O Gemini está sobrecarregado. Tente de novo em alguns segundos.";
+    case "slow": return "O Gemini demorou demais para responder. Tente de novo; se repetir, em Configurar troque o Modelo para gemini-flash-lite-latest.";
+    case "offline": return "Sem internet. Confira a conexão e tente de novo.";
+    case "blocked": return "A Luisa não pôde responder a essa frase. Tente dizer de outro jeito.";
+    default: return "Erro do Gemini: " + e.message;
+  }
+}
+
+async function callGemini(contents, sys, key = S.key, primaryModel = S.model) {
+  if (!key) throw apiError("nokey");
+  const models = [...new Set([primaryModel || DEFAULT_MODEL, FALLBACK_MODEL])];
+  let lastErr = apiError("other", "sem resposta");
+  for (const model of models) {
+    for (let lvl = S.cfgLevel; lvl < CONFIG_LADDER.length; lvl++) {
+      const body = { system_instruction: { parts: [{ text: sys }] }, contents };
+      if (CONFIG_LADDER[lvl]) body.generationConfig = CONFIG_LADDER[lvl];
+      let r, data = null;
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+      try {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify(body),
+          signal: ctl.signal
+        });
+        if (r.ok) data = await r.json();
+      } catch (e) {
+        if (e.name === "AbortError") { lastErr = apiError("slow", model); break; }   // demorou demais: tenta o próximo modelo
+        throw apiError("offline");
+      } finally { clearTimeout(timer); }
+      if (r.ok) {
+        S.cfgLevel = lvl;
+        if (primaryModel === S.model) S.model = model;   // se o reserva respondeu, fica nele até recarregar a página
+        const parts = data?.candidates?.[0]?.content?.parts;
+        const text = (parts || []).filter(p => !p.thought && typeof p.text === "string").map(p => p.text).join("").trim();
+        if (!text) throw apiError("blocked");
+        return text;
+      }
+      const err = await r.json().catch(() => ({}));
+      const msg = err?.error?.message || ("HTTP " + r.status);
+      if (/api key/i.test(msg) || r.status === 401 || r.status === 403) throw apiError("badkey", msg);
+      if (r.status === 400) { lastErr = apiError("other", msg); continue; }      // tenta configuração mais simples
+      if (r.status === 404) { lastErr = apiError("model", msg); break; }          // tenta o próximo modelo
+      if (r.status === 429) { lastErr = apiError("quota", msg); break; }
+      if (r.status >= 500) { lastErr = apiError("busy", msg); break; }
+      throw apiError("other", msg);
+    }
+  }
+  throw lastErr;
+}
+
+function parseReply(text) {
+  let obj = null;
+  try { obj = JSON.parse(text); } catch {
+    const a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a !== -1 && b > a) { try { obj = JSON.parse(text.slice(a, b + 1)); } catch { /* segue como texto puro */ } }
+  }
+  if (!obj || typeof obj.reply !== "string" || !obj.reply.trim()) obj = { reply: text.replace(/```(json)?/g, "").trim() };
+  return {
+    reply: obj.reply.trim(),
+    reply_pt: typeof obj.reply_pt === "string" ? obj.reply_pt.trim() : "",
+    better: typeof obj.better === "string" ? obj.better.trim() : "",
+    hints: Array.isArray(obj.hints) ? obj.hints.filter(h => typeof h === "string" && h.trim()).slice(0, 3) : []
+  };
+}
+
+/* ================= Voz (falar) ================= */
+let voices = [];
+function englishVoices() { return voices.filter(v => /^en([-_]|$)/i.test(v.lang)); }
+function pickVoice() {
+  const en = englishVoices();
+  return en.find(v => v.name === S.voiceName)
+    || en.find(v => /Google US English/i.test(v.name))
+    || en.find(v => /en[-_]US/i.test(v.lang) && /Natural|Online/i.test(v.name))
+    || en.find(v => /en[-_]US/i.test(v.lang))
+    || en[0] || null;
+}
+function loadVoices() {
+  if (!("speechSynthesis" in window)) return;
+  voices = speechSynthesis.getVoices();
+  const sel = $("voiceSel"), chosen = pickVoice();
+  sel.replaceChildren(...englishVoices().map(v => {
+    const o = document.createElement("option");
+    o.value = v.name; o.textContent = `${v.name} (${v.lang})`; o.selected = !!chosen && v.name === chosen.name;
+    return o;
+  }));
+}
+function speak(text, rate = 0.92) {
+  if (!("speechSynthesis" in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const v = pickVoice();
+  if (v) u.voice = v;
+  u.lang = v ? v.lang : "en-US";
+  u.rate = rate;
+  speechSynthesis.speak(u);
+}
+
+/* ================= Microfone (ouvir) ================= */
+function setStatus(msg, isErr = false) { $("status").textContent = msg || ""; $("status").classList.toggle("err", isErr); }
+
+function stopListening() { if (S.rec) { try { S.rec.stop(); } catch { /* já parou */ } } }
+
+function listen(lang) {
+  if (S.listening) { stopListening(); return; }
+  if (S.busy) return;
+  if (!SR) { setStatus("Este navegador não reconhece fala. Use o Chrome ou o Edge, ou digite a resposta.", true); return; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  const rec = new SR();
+  S.rec = rec;
+  rec.lang = lang; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+  let finalText = "", failed = false;
+  rec.onstart = () => {
+    S.listening = true; $("mic").classList.add("on"); $("micLbl").textContent = "Stop";
+    setStatus(lang === "pt-BR" ? "Ouvindo em português..." : "Listening... fale em inglês");
+  };
+  rec.onresult = ev => {
+    let interim = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) finalText += t; else interim += t;
+    }
+    $("typedInput").value = (finalText + interim).trim();
+  };
+  rec.onerror = ev => {
+    failed = true;
+    const m = {
+      "no-speech": "Não ouvi nada. Clique no microfone e fale mais perto.",
+      "not-allowed": "O microfone está bloqueado. Clique no cadeado ao lado do endereço e permita o microfone.",
+      "service-not-allowed": "O microfone está bloqueado neste navegador.",
+      "audio-capture": "Nenhum microfone encontrado. Confira se está conectado.",
+      "network": "O reconhecimento de fala precisa de internet. Confira a conexão.",
+      "aborted": ""
+    };
+    setStatus(m[ev.error] ?? ("Erro no microfone: " + ev.error), ev.error !== "aborted");
+  };
+  rec.onend = () => {
+    S.listening = false; S.rec = null; $("mic").classList.remove("on"); $("micLbl").textContent = "Speak";
+    const text = $("typedInput").value.trim();
+    if (failed) return;
+    if (!text) { setStatus("Não ouvi nada. Tente de novo."); return; }
+    if (S.autoSend) sendStudent(text);
+    else { setStatus("Confira o texto e aperte Enter para enviar."); $("typedInput").focus(); }
+  };
+  $("typedInput").value = "";
+  try { rec.start(); } catch { setStatus("Não consegui ligar o microfone. Tente de novo.", true); }
+}
+
+/* ================= Conversa ================= */
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+function scrollLog() { const log = $("log"); log.scrollTop = log.scrollHeight; }
+function norm(s) { return s.toLowerCase().replace(/[^a-z0-9à-ÿ ]/gi, "").replace(/\s+/g, " ").trim(); }
+
+function addAi(r) {
+  document.querySelectorAll(".msg.ai").forEach(m => m.classList.add("old"));
+  const m = el("div", "msg ai");
+  m.append(el("div", "who", "Luisa"), el("p", "en", r.reply));
+  const pt = el("p", "pt", r.reply_pt); pt.hidden = true; m.append(pt);
+  $("log").append(m);
+  S.last = { data: r, ptEl: pt };
+  $("hints").hidden = true;
+  scrollLog();
+}
+function addStudent(text) {
+  const m = el("div", "msg me");
+  m.append(el("div", "who", $("studentName").value.trim() || "Student"), el("p", "said", text));
+  $("log").append(m); scrollLog();
+  return m;
+}
+
+function setBusy(b) {
+  S.busy = b;
+  for (const id of ["mic", "micPtBtn", "repeatBtn", "slowBtn", "ptBtn", "hintBtn"]) $(id).disabled = b;
+  $("typed").querySelector("button").disabled = b;
+}
+
+async function respond(studentMsgEl) {
+  setBusy(true); setStatus("");
+  const thinking = el("div", "thinking", "Luisa is thinking...");
+  $("log").append(thinking); scrollLog();
+  const t0 = Date.now();
+  const tick = setInterval(() => { thinking.textContent = `Luisa is thinking... ${Math.round((Date.now() - t0) / 1000)} s`; }, 1000);
+  try {
+    let r;
+    if (S.demo) {
+      await new Promise(res => setTimeout(res, 500));
+      r = DEMO_SCRIPT[S.demoStep++ % DEMO_SCRIPT.length];
+      S.history.push({ role: "model", parts: [{ text: JSON.stringify(r) }] });
+    } else {
+      const contents = S.history.slice(-25);
+      while (contents.length && contents[0].role !== "user") contents.shift();
+      const text = await callGemini(contents, systemPrompt());
+      r = parseReply(text);
+      S.history.push({ role: "model", parts: [{ text: JSON.stringify(r) }] });
+    }
+    thinking.remove();
+    if (studentMsgEl && r.better && norm(r.better) !== norm(studentMsgEl.querySelector(".said").textContent)) {
+      studentMsgEl.append(el("p", "better", "In English: " + r.better));
+    }
+    addAi(r);
+    speak(r.reply);
+  } catch (e) {
+    thinking.remove();
+    setStatus(explain(e), true);
+    const retry = el("button", "btn", "Tentar de novo");
+    retry.onclick = () => { retry.remove(); respond(studentMsgEl); };
+    $("status").append(" ", retry);
+  } finally { clearInterval(tick); setBusy(false); }
+}
+
+function sendStudent(text) {
+  text = text.trim();
+  if (!text || S.busy || !S.scenario) return;
+  $("typedInput").value = "";
+  const m = addStudent(text);
+  S.history.push({ role: "user", parts: [{ text }] });
+  respond(m);
+}
+
+function startScenario(sc) {
+  if (!S.key && !S.demo) { openSettings(); return; }
+  S.scenario = sc; S.history = []; S.last = null; S.demoStep = 0;
+  $("log").replaceChildren(); $("hints").hidden = true; setStatus("");
+  $("home").hidden = true; $("talk").hidden = false;
+  $("scenarioTag").textContent = sc.en; $("scenarioTag").hidden = false;
+  $("nextBtn").hidden = false; $("homeBtn").hidden = false;
+  const name = $("studentName").value.trim();
+  S.history.push({ role: "user", parts: [{ text: `[START] Student's first name: ${name || "(not given)"}` }] });
+  respond(null);
+}
+
+function goHome() {
+  stopListening();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  S.scenario = null;
+  $("talk").hidden = true; $("home").hidden = false;
+  $("scenarioTag").hidden = true; $("nextBtn").hidden = true; $("homeBtn").hidden = true;
+  refreshNotices();
+}
+
+function nextStudent() {
+  if (!S.scenario || S.busy) return;
+  stopListening();
+  const name = prompt("Next student! Primeiro nome (pode deixar em branco):", "");
+  if (name === null) return;
+  $("studentName").value = name.trim().slice(0, 30);
+  startScenario(S.scenario);
+}
+
+/* ================= Configurações ================= */
+function refreshNotices() {
+  $("keyNotice").hidden = !!S.key || S.demo;
+  $("browserNotice").hidden = !!SR;
+  $("demoTag").hidden = !S.demo;
+}
+function openSettings() {
+  $("keyInput").value = S.key; $("modelInput").value = S.model;
+  $("autoSend").checked = S.autoSend; $("testOut").textContent = "";
+  loadVoices();
+  $("settings").showModal();
+}
+function saveSettings() {
+  S.key = $("keyInput").value.trim();
+  S.model = $("modelInput").value.trim() || DEFAULT_MODEL;
+  S.voiceName = $("voiceSel").value || "";
+  S.autoSend = $("autoSend").checked;
+  S.cfgLevel = 0;
+  store.set("key", S.key); store.set("model", S.model); store.set("voice", S.voiceName); store.set("autoSend", S.autoSend ? "1" : "0");
+  $("settings").close(); refreshNotices();
+}
+async function testKey() {
+  const out = $("testOut");
+  out.style.color = ""; out.textContent = "Testando...";
+  try {
+    const text = await callGemini([{ role: "user", parts: [{ text: "Say only: Hello, class!" }] }],
+      "You are a test. Answer in plain text.", $("keyInput").value.trim(), $("modelInput").value.trim() || DEFAULT_MODEL);
+    out.style.color = "var(--ok)";
+    out.textContent = "Funcionou! O Gemini respondeu: " + text.slice(0, 80);
+  } catch (e) {
+    out.style.color = "var(--warn)";
+    out.textContent = explain(e);
+  } finally { S.cfgLevel = 0; }
+}
+
+/* ================= Ligações ================= */
+$("cards").append(...SCENARIOS.map(sc => {
+  const b = el("button", "card");
+  b.append(el("span", "en", sc.en), el("span", "pt", sc.pt), el("span", "ex", sc.ex));
+  b.onclick = () => startScenario(sc);
+  return b;
+}));
+$("level").value = store.get("level", "A1");
+$("level").onchange = () => store.set("level", $("level").value);
+$("mic").onclick = () => listen("en-US");
+$("micPtBtn").onclick = () => listen("pt-BR");
+$("typed").onsubmit = ev => { ev.preventDefault(); sendStudent($("typedInput").value); };
+$("repeatBtn").onclick = () => S.last && speak(S.last.data.reply);
+$("slowBtn").onclick = () => S.last && speak(S.last.data.reply, 0.6);
+$("ptBtn").onclick = () => { if (S.last && S.last.data.reply_pt) { S.last.ptEl.hidden = !S.last.ptEl.hidden; scrollLog(); } };
+$("hintBtn").onclick = () => {
+  const box = $("hints");
+  if (!box.hidden) { box.hidden = true; return; }
+  if (!S.last || !S.last.data.hints.length) { setStatus("Sem dica para esta pergunta."); return; }
+  box.replaceChildren(el("span", "lbl", "You can say:"), ...S.last.data.hints.map(h => {
+    const c = el("button", "chip", h); c.title = "Clique para ouvir"; c.onclick = () => speak(h.replace(/_+/g, " "), 0.8); return c;
+  }));
+  box.hidden = false;
+  scrollLog();
+};
+$("nextBtn").onclick = nextStudent;
+$("homeBtn").onclick = goHome;
+$("settingsBtn").onclick = openSettings;
+$("saveBtn").onclick = saveSettings;
+$("testBtn").onclick = testKey;
+$("voiceTestBtn").onclick = () => { S.voiceName = $("voiceSel").value || ""; speak("Hello, class! I'm Luisa. Let's talk!"); };
+document.addEventListener("keydown", ev => {
+  if (ev.code !== "Space" || $("talk").hidden || $("settings").open) return;
+  if (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(document.activeElement?.tagName || "")) return;
+  ev.preventDefault(); listen("en-US");
+});
+if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+refreshNotices();
+</script>
+</body>
+</html>
