@@ -417,14 +417,27 @@ function loadVoices() {
 }
 function speak(text, rate = 0.92) {
   if (!("speechSynthesis" in window) || !text) return;
-  speechSynthesis.cancel();
+  const wasBusy = speechSynthesis.speaking || speechSynthesis.pending;
+  if (wasBusy) speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice();
   if (v) u.voice = v;
   u.lang = v ? v.lang : "en-US";
   u.rate = rate;
+  const go = () => { speechSynthesis.resume(); speechSynthesis.speak(u); };
+  // No iPad/iPhone, falar logo depois de cancelar outra fala sai mudo: espera um instante.
+  if (wasBusy) setTimeout(go, 120); else go();
+}
+// iPad/iPhone só liberam a voz se a primeira fala nascer de um toque. Como a resposta da Luisa
+// chega depois (pela internet), cada toque na tela "acorda" a voz com uma fala muda.
+function unlockSpeech() {
+  if (!("speechSynthesis" in window) || speechSynthesis.speaking || speechSynthesis.pending) return;
+  const u = new SpeechSynthesisUtterance(" ");
+  u.volume = 0; u.lang = "en-US";
   speechSynthesis.speak(u);
 }
+document.addEventListener("pointerdown", unlockSpeech, true);
+document.addEventListener("keydown", unlockSpeech, true);
 
 /* ================= Microfone (ouvir) ================= */
 function setStatus(msg, isErr = false) { $("status").textContent = msg || ""; $("status").classList.toggle("err", isErr); }
